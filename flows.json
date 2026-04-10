@@ -1,0 +1,505 @@
+[
+    {
+        "id": "435d339899073b62",
+        "type": "tab",
+        "label": "Giam sát thủy sản",
+        "disabled": false,
+        "info": ""
+    },
+    {
+        "id": "606671b2671e5532",
+        "type": "mqtt in",
+        "z": "435d339899073b62",
+        "name": "Dữ liệu ESP32",
+        "topic": "thuy_san_smart/data",
+        "qos": "0",
+        "datatype": "json",
+        "broker": "5ac05a04010bf733",
+        "nl": false,
+        "rap": false,
+        "inputs": 0,
+        "x": 260,
+        "y": 180,
+        "wires": [
+            [
+                "a8102f6998bbac21",
+                "9dbde932e5eb1c0b",
+                "59eb6f237f263733",
+                "7216d9abb571e2c9",
+                "a8bd4f6008df3c35"
+            ]
+        ]
+    },
+    {
+        "id": "a8102f6998bbac21",
+        "type": "change",
+        "z": "435d339899073b62",
+        "name": "set temp",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.temp",
+                "tot": "msg"
+            }
+        ],
+        "x": 540,
+        "y": 100,
+        "wires": [
+            [
+                "159ea0c410dc770b"
+            ]
+        ]
+    },
+    {
+        "id": "9dbde932e5eb1c0b",
+        "type": "change",
+        "z": "435d339899073b62",
+        "name": "set dist",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.dist",
+                "tot": "msg"
+            }
+        ],
+        "x": 540,
+        "y": 140,
+        "wires": [
+            [
+                "4f0ff0b1c6e13f13"
+            ]
+        ]
+    },
+    {
+        "id": "59eb6f237f263733",
+        "type": "change",
+        "z": "435d339899073b62",
+        "name": "set salt",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.salt",
+                "tot": "msg"
+            }
+        ],
+        "x": 540,
+        "y": 180,
+        "wires": [
+            [
+                "a5d543947ebd2ebc"
+            ]
+        ]
+    },
+    {
+        "id": "159ea0c410dc770b",
+        "type": "ui_gauge",
+        "z": "435d339899073b62",
+        "name": "Nhiệt độ (°C)",
+        "group": "8ad639b0969736a3",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "gtype": "gage",
+        "title": "Nhiệt độ (°C)",
+        "label": "°C",
+        "format": "{{value}}",
+        "min": 0,
+        "max": "50",
+        "colors": [
+            "#00b500",
+            "#e6e600",
+            "#ca3838"
+        ],
+        "x": 770,
+        "y": 100,
+        "wires": []
+    },
+    {
+        "id": "4f0ff0b1c6e13f13",
+        "type": "ui_gauge",
+        "z": "435d339899073b62",
+        "name": "Mực nước (cm)",
+        "group": "8ad639b0969736a3",
+        "order": 2,
+        "width": 0,
+        "height": 0,
+        "gtype": "gage",
+        "title": "Mực nước (cm)",
+        "label": "cm",
+        "format": "{{value}}",
+        "min": 0,
+        "max": "500",
+        "colors": [
+            "#00b500",
+            "#e6e600",
+            "#ca3838"
+        ],
+        "x": 770,
+        "y": 140,
+        "wires": []
+    },
+    {
+        "id": "a5d543947ebd2ebc",
+        "type": "ui_gauge",
+        "z": "435d339899073b62",
+        "name": "Độ mặn (ppt)",
+        "group": "8ad639b0969736a3",
+        "order": 3,
+        "width": 0,
+        "height": 0,
+        "gtype": "gage",
+        "title": "Độ mặn (ppt)",
+        "label": "ppt",
+        "format": "{{value}}",
+        "min": 0,
+        "max": "100",
+        "colors": [
+            "#00b500",
+            "#e6e600",
+            "#ca3838"
+        ],
+        "x": 770,
+        "y": 180,
+        "wires": []
+    },
+    {
+        "id": "7216d9abb571e2c9",
+        "type": "function",
+        "z": "435d339899073b62",
+        "name": "Kiểm tra ngưỡng",
+        "func": "var data = (typeof msg.payload === 'string') ? JSON.parse(msg.payload) : msg.payload;\n\nif (!data || typeof data !== 'object') return null;\n\nvar t = data.temp;\nvar d = data.dist;\nvar s = data.salt;\n\nif (t === undefined || d === undefined || s === undefined) return null;\n\nvar canhBao = \"Hệ thống Ổn định\";\nvar nguyHiem = false;\n\n\nvar errorDist = (d < 150 || d > 350);\nvar errorTemp = (t < 10 || t > 30);\nvar errorSalt = (s > 50);\n\n\nif (errorDist && errorTemp && errorSalt) {\n    canhBao = \"NGUY HIỂM HỒ NƯỚC: Cả 3 thông số vượt ngưỡng!\";\n    nguyHiem = true;\n}\nelse if (errorDist) {\n    if (d > 350) {\n        canhBao = \"Cảnh báo: Nước tràn (\" + d + \"cm) - Đang hút nước ra!\";\n    } else {\n        canhBao = \"Cảnh báo: Nước cạn (\" + d + \"cm) - Đang bơm nước vào!\";\n    }\n    nguyHiem = true;\n}\nelse if (errorSalt) {\n    canhBao = \"Cảnh báo: Độ mặn quá cao (\" + s + \"ppt) - Đang xử lý!\";\n    nguyHiem = true;\n}\nelse if (errorTemp) {\n    canhBao = \"Cảnh báo: Nhiệt độ bất thường (\" + t + \"°C) - Cần điều chỉnh!\";\n    nguyHiem = true;\n}\n\n\nmsg.payload = canhBao;\nvar msgAlert = nguyHiem ? { payload: canhBao, topic: \"CẢNH BÁO\" } : null;\nvar msgSound = nguyHiem ? { payload: 1 } : null;\n\nreturn [msg, msgAlert, msgSound];",
+        "outputs": 3,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 550,
+        "y": 280,
+        "wires": [
+            [
+                "e0b2fc762b986d8e"
+            ],
+            [
+                "8a366340d7a5243c"
+            ],
+            [
+                "f53cc645d87746ff"
+            ]
+        ]
+    },
+    {
+        "id": "e0b2fc762b986d8e",
+        "type": "ui_text",
+        "z": "435d339899073b62",
+        "group": "044836c111f9ed0e",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "name": "Cảnh báo:",
+        "label": "Trạng thái:",
+        "format": "{{msg.payload}}",
+        "layout": "row-spread",
+        "x": 850,
+        "y": 240,
+        "wires": []
+    },
+    {
+        "id": "084705375ba44107",
+        "type": "e-mail",
+        "z": "435d339899073b62",
+        "server": "smtp.gmail.com",
+        "port": "465",
+        "authtype": "BASIC",
+        "saslformat": false,
+        "token": "oauth2Response.access_token",
+        "secure": true,
+        "tls": true,
+        "name": "vovanthanhson1000@gmail.com",
+        "dname": "Gửi Email",
+        "x": 1060,
+        "y": 300,
+        "wires": []
+    },
+    {
+        "id": "f53cc645d87746ff",
+        "type": "switch",
+        "z": "435d339899073b62",
+        "name": "Lọc Cảnh Báo = 1",
+        "property": "payload",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "eq",
+                "v": "1",
+                "vt": "num"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 1,
+        "x": 830,
+        "y": 360,
+        "wires": [
+            [
+                "683e968dac7eaa43"
+            ]
+        ]
+    },
+    {
+        "id": "39a2927a9c7856a9",
+        "type": "ui_audio",
+        "z": "435d339899073b62",
+        "name": "Phát Âm Thanh",
+        "group": "044836c111f9ed0e",
+        "voice": "",
+        "always": "",
+        "x": 1280,
+        "y": 360,
+        "wires": []
+    },
+    {
+        "id": "1859129121c6619a",
+        "type": "ui_dropdown",
+        "z": "435d339899073b62",
+        "name": "Lệnh Bơm",
+        "label": "Gửi Lệnh Bơm",
+        "tooltip": "",
+        "place": "Chọn lệnh",
+        "group": "c1e9a2eefaaf3f10",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "passthru": true,
+        "multiple": false,
+        "options": [
+            {
+                "label": "BẬT (MANUAL)",
+                "value": "ON",
+                "type": "str"
+            },
+            {
+                "label": "TẮT (MANUAL)",
+                "value": "OFF",
+                "type": "str"
+            },
+            {
+                "label": "TỰ ĐỘNG (AUTO)",
+                "value": "AUTO",
+                "type": "str"
+            }
+        ],
+        "payload": "",
+        "topic": "topic",
+        "topicType": "msg",
+        "className": "",
+        "x": 350,
+        "y": 600,
+        "wires": [
+            [
+                "6fafda557760a3e2"
+            ]
+        ]
+    },
+    {
+        "id": "6fafda557760a3e2",
+        "type": "mqtt out",
+        "z": "435d339899073b62",
+        "name": "thuy_san_smart/control",
+        "topic": "thuy_san_smart/control",
+        "qos": "0",
+        "retain": "false",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "5ac05a04010bf733",
+        "x": 690,
+        "y": 600,
+        "wires": []
+    },
+    {
+        "id": "12ee5dca17e7c72e",
+        "type": "ui_text",
+        "z": "435d339899073b62",
+        "group": "c1e9a2eefaaf3f10",
+        "order": 2,
+        "width": 0,
+        "height": 0,
+        "name": "Bơm thực tế:",
+        "label": "Trạng thái Bơm:",
+        "format": "{{msg.payload}}",
+        "layout": "row-spread",
+        "x": 770,
+        "y": 460,
+        "wires": []
+    },
+    {
+        "id": "683e968dac7eaa43",
+        "type": "file in",
+        "z": "435d339899073b62",
+        "name": "",
+        "filename": "D:/bao_dong.MP3",
+        "filenameType": "str",
+        "format": "",
+        "chunk": false,
+        "sendError": false,
+        "encoding": "none",
+        "allProps": false,
+        "x": 1070,
+        "y": 360,
+        "wires": [
+            [
+                "39a2927a9c7856a9"
+            ]
+        ]
+    },
+    {
+        "id": "a8bd4f6008df3c35",
+        "type": "change",
+        "z": "435d339899073b62",
+        "name": "",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.pump",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 500,
+        "y": 460,
+        "wires": [
+            [
+                "12ee5dca17e7c72e"
+            ]
+        ]
+    },
+    {
+        "id": "8a366340d7a5243c",
+        "type": "rbe",
+        "z": "435d339899073b62",
+        "name": "",
+        "func": "rbe",
+        "gap": "",
+        "start": "",
+        "inout": "out",
+        "septopics": true,
+        "property": "payload",
+        "topi": "topic",
+        "x": 850,
+        "y": 300,
+        "wires": [
+            [
+                "084705375ba44107"
+            ]
+        ]
+    },
+    {
+        "id": "5ac05a04010bf733",
+        "type": "mqtt-broker",
+        "name": "MQTT_Broker1",
+        "broker": "491a885f0fda4d9a8bd65b42c7168f35.s1.eu.hivemq.cloud",
+        "port": "8883",
+        "tls": "tls_config_custom",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": true,
+        "protocolVersion": 4,
+        "keepalive": 60,
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    },
+    {
+        "id": "8ad639b0969736a3",
+        "type": "ui_group",
+        "name": "Môi trường",
+        "tab": "tab_giamsat_final",
+        "order": 1,
+        "disp": true,
+        "width": "6",
+        "collapse": false
+    },
+    {
+        "id": "044836c111f9ed0e",
+        "type": "ui_group",
+        "name": "Cảnh báo",
+        "tab": "tab_giamsat_final",
+        "order": 2,
+        "disp": true,
+        "width": "6",
+        "collapse": false
+    },
+    {
+        "id": "c1e9a2eefaaf3f10",
+        "type": "ui_group",
+        "name": "Điều khiển Bơm",
+        "tab": "tab_giamsat_final",
+        "order": 3,
+        "disp": true,
+        "width": "6",
+        "collapse": false
+    },
+    {
+        "id": "tls_config_custom",
+        "type": "tls-config",
+        "name": "",
+        "cert": "",
+        "key": "",
+        "ca": "",
+        "certname": "",
+        "keyname": "",
+        "caname": "",
+        "servername": "",
+        "verifyservercert": false,
+        "alpnprotocol": ""
+    },
+    {
+        "id": "tab_giamsat_final",
+        "type": "ui_tab",
+        "name": "Giám Sát",
+        "icon": "dashboard",
+        "order": 1,
+        "disabled": false,
+        "hidden": false
+    },
+    {
+        "id": "9dbdff7c9c7d9e10",
+        "type": "global-config",
+        "env": [],
+        "modules": {
+            "node-red-dashboard": "3.6.6",
+            "node-red-node-email": "5.2.1"
+        }
+    }
+]
